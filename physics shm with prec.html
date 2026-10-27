@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Pendulum Practical · Lab Precautions & Real-Time Slope</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif; }
+  body {
+    background: linear-gradient(145deg, #ecfeff 0%, #cffafe 100%);
+    min-height: 100vh; padding: 20px;
+    display: flex; justify-content: center; align-items: flex-start;
+  }
+  .app {
+    max-width: 1440px; width: 100%;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-radius: 40px; padding: 28px;
+    box-shadow: 0 30px 60px -12px rgba(0,50,80,0.25);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 14px;
+  }
+  .header h1 {
+    font-size: 1.95rem; font-weight: 800;
+    background: linear-gradient(135deg, #0e7490, #06b6d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header h1 i { -webkit-text-fill-color: #0891b2; }
+  .header p { color: #64748b; font-size: 0.88rem; margin-top: 4px; }
+  .stats-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stat-chip {
+    background: white; padding: 8px 15px; border-radius: 40px;
+    border: 1px solid #cffafe; font-size: 0.82rem; font-weight: 600; color: #0e7490;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(8,145,178,0.06);
+  }
+  .stat-chip i { color: #06b6d4; }
+  .stat-chip strong { color: #0b1e33; font-size: 1rem; }
+
+  .main-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px;
+  }
+  @media (max-width: 1150px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .left-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  .canvas-wrap {
+    position: relative;
+    background: white; border-radius: 24px; padding: 14px;
+    box-shadow: 0 12px 32px rgba(0,20,40,0.08);
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+  canvas {
+    width: 100%; height: auto; display: block;
+    border-radius: 16px;
+  }
+  #pendulumCanvas { background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%); }
+  #graphCanvas { background: #ffffff; }
+
+  .stopwatch-overlay {
+    position: absolute; top: 24px; right: 24px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+    padding: 16px 24px; border-radius: 18px;
+    min-width: 210px; text-align: center;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    transition: box-shadow 0.3s;
+  }
+  .stopwatch-overlay.running {
+    box-shadow: 0 12px 32px rgba(34, 211, 238, 0.5), 0 0 20px rgba(34, 211, 238, 0.3);
+    animation: swPulse 2s ease-in-out infinite;
+  }
+  @keyframes swPulse {
+    0%, 100% { border-color: rgba(6, 182, 212, 0.4); }
+    50% { border-color: rgba(34, 211, 238, 0.9); }
+  }
+  .stopwatch-overlay.done {
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+    border-color: rgba(16, 185, 129, 0.7);
+    animation: swFlash 0.6s ease;
+  }
+  @keyframes swFlash {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .sw-label {
+    font-size: 0.62rem; letter-spacing: 0.15em;
+    color: #67e8f9; text-transform: uppercase; font-weight: 700;
+  }
+  .sw-time {
+    font-size: 2.6rem; font-weight: 800;
+    font-family: 'Courier New', monospace;
+    color: #22d3ee;
+    text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+    margin: 4px 0 2px 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .sw-unit { font-size: 0.68rem; color: #94a3b8; }
+  .sw-progress {
+    margin-top: 8px; font-size: 0.72rem; color: #e2e8f0;
+    padding: 4px 10px; background: rgba(6, 182, 212, 0.15);
+    border-radius: 6px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .graph-card {
+    background: white; border-radius: 24px; padding: 16px;
+    box-shadow: 0 12px 32px rgba(0,20,40,0.08);
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+  .graph-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 10px; padding: 0 4px;
+  }
+  .graph-header h3 {
+    font-size: 0.95rem; color: #0e7490;
+    display: flex; align-items: center; gap: 8px; font-weight: 700;
+  }
+  .slope-info {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 0.78rem; color: #475569; align-items: center;
+  }
+  .slope-info span { display: flex; gap: 4px; align-items: baseline; }
+  .slope-info strong {
+    font-size: 0.92rem; color: #0e7490;
+    font-variant-numeric: tabular-nums; font-weight: 800;
+  }
+  .graph-legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 0.72rem; color: #64748b;
+    padding: 0 4px; margin-bottom: 6px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.data { background: #06b6d4; border: 2px solid #0891b2; }
+  .legend-line { width: 20px; height: 3px; border-radius: 2px; }
+  .legend-line.fit { background: #f59e0b; }
+  .legend-line.theory { background: #a78bfa; border-top: 1px dashed #7c3aed; }
+  .legend-triangle {
+    width: 14px; height: 14px;
+    border-left: 2px dashed #f59e0b;
+    border-bottom: 2px dashed #f59e0b;
+    position: relative;
+  }
+
+  .sidebar { display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: white; border-radius: 20px; padding: 18px;
+    box-shadow: 0 8px 24px rgba(0,20,40,0.06);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  .card h3 {
+    font-size: 0.92rem; color: #0b1e33; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px; font-weight: 700;
+  }
+
+  .slider-group { margin-bottom: 14px; }
+  .slider-group label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 600; color: #1e293b; font-size: 0.82rem; margin-bottom: 6px;
+  }
+  .slider-group label strong {
+    color: #0891b2; font-size: 0.95rem; font-variant-numeric: tabular-nums;
+  }
+  input[type="range"] {
+    width: 100%; height: 6px; accent-color: #0891b2; cursor: pointer;
+  }
+  select {
+    width: 100%; padding: 9px 12px; border: 1px solid #cffafe;
+    border-radius: 10px; font-size: 0.85rem; cursor: pointer; background: white;
+    font-weight: 500; color: #1e293b;
+    transition: border-color 0.15s;
+  }
+  select:focus { outline: none; border-color: #06b6d4; }
+
+  .quick-lengths {
+    display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px;
+    align-items: center;
+  }
+  .quick-lengths span {
+    font-size: 0.7rem; color: #64748b; font-weight: 600;
+    margin-right: 2px;
+  }
+  .quick-lengths button {
+    padding: 4px 10px; border-radius: 20px;
+    background: rgba(8, 145, 178, 0.1);
+    border: 1px solid rgba(8, 145, 178, 0.25);
+    color: #0e7490; font-size: 0.7rem; font-weight: 700;
+    cursor: pointer; transition: 0.15s;
+    font-variant-numeric: tabular-nums;
+  }
+  .quick-lengths button:hover {
+    background: rgba(8, 145, 178, 0.22);
+    border-color: #0891b2; transform: translateY(-1px);
+  }
+  .quick-lengths button.active {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    border-color: transparent; color: white;
+    box-shadow: 0 3px 10px rgba(8,145,178,0.4);
+  }
+
+  .est-time {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #fbbf24;
+    padding: 8px 12px; border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.78rem; color: #78350f; font-weight: 600;
+  }
+  .est-time i { color: #d97706; }
+  .est-time strong { color: #92400e; font-variant-numeric: tabular-nums; }
+
+  .predict-box {
+    background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+    border: 1px solid #5eead4;
+    padding: 8px 12px; border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 0.75rem; color: #115e59; font-weight: 600;
+    line-height: 1.5;
+  }
+  .predict-box strong { color: #0f766e; font-variant-numeric: tabular-nums; }
+
+  .btn {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: 0.15s;
+  }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    color: white; box-shadow: 0 6px 20px rgba(8,145,178,0.35);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(8,145,178,0.45); }
+  .btn-danger {
+    background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;
+  }
+  .btn-danger:hover:not(:disabled) { background: #fecaca; }
+
+  .table-wrap {
+    max-height: 240px; overflow-y: auto;
+    border-radius: 10px; border: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  thead {
+    position: sticky; top: 0; background: linear-gradient(135deg, #ecfeff, #cffafe);
+    z-index: 1;
+  }
+  th {
+    padding: 8px 6px; text-align: center;
+    color: #0e7490; font-weight: 700; font-size: 0.68rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 2px solid #a5f3fc;
+  }
+  td {
+    padding: 7px 6px; text-align: center;
+    color: #1e293b; border-bottom: 1px solid #f1f5f9;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:hover { background: #f0fdfa; }
+  tbody tr:last-child td { border-bottom: none; }
+  .del-btn {
+    background: none; border: none; color: #ef4444;
+    cursor: pointer; font-size: 0.85rem; padding: 2px 6px;
+    border-radius: 4px; transition: 0.15s;
+  }
+  .del-btn:hover { background: #fee2e2; }
+  .table-empty {
+    text-align: center; color: #94a3b8; font-size: 0.8rem;
+    padding: 16px 10px; font-style: italic;
+  }
+
+  /* ============ SAFETY CARD ============ */
+  .safety-card {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 2px solid #fca5a5;
+    padding: 18px;
+  }
+  .safety-card h3 { color: #991b1b; margin-bottom: 10px; }
+  .safety-card h3 i { color: #dc2626; }
+  .safety-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #7f1d1d;
+  }
+  .safety-list li {
+    padding: 6px 0 6px 22px;
+    position: relative;
+    border-bottom: 1px dashed rgba(220, 38, 38, 0.18);
+  }
+  .safety-list li:last-child { border-bottom: none; }
+  .safety-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #dc2626;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .safety-list strong { color: #7f1d1d; font-weight: 800; }
+  .safety-note {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    color: #991b1b;
+    font-style: italic;
+    border-left: 3px solid #dc2626;
+    line-height: 1.5;
+  }
+
+  .precaution-section {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #fff7ed;
+    border-radius: 8px;
+    border-left: 3px solid #ea580c;
+  }
+  .precaution-section:last-child { margin-bottom: 0; }
+  .precaution-section h4 {
+    font-size: 0.8rem;
+    color: #9a3412;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+  }
+  .precaution-section ul,
+  .precaution-section ol {
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: #7c2d12;
+    margin: 0 0 0 18px;
+    padding: 0;
+  }
+  .precaution-section li { margin-bottom: 4px; }
+  .precaution-section li:last-child { margin-bottom: 0; }
+  .precaution-section strong { color: #7c2d12; font-weight: 800; }
+
+  .ai-panel {
+    background: linear-gradient(135deg, #ecfeff, #cffafe);
+    border-left: 4px solid #06b6d4;
+    border-radius: 14px; padding: 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .ai-panel-header {
+    padding: 14px 18px;
+    background: rgba(8, 145, 178, 0.08);
+    border-bottom: 1px solid rgba(8, 145, 178, 0.15);
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 0.92rem; color: #0e7490;
+  }
+  .ai-panel-header .ai-badge {
+    margin-left: auto; font-size: 0.65rem; font-weight: 700;
+    background: #0891b2; color: white;
+    padding: 2px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .ai-scroll {
+    padding: 14px 16px;
+    max-height: 640px; overflow-y: auto;
+    flex: 1;
+  }
+  .ai-scroll::-webkit-scrollbar { width: 6px; }
+  .ai-scroll::-webkit-scrollbar-thumb { background: rgba(8,145,178,0.3); border-radius: 3px; }
+
+  .ai-idle {
+    color: #475569; font-size: 0.82rem; line-height: 1.6;
+    padding: 6px 0;
+  }
+  .ai-idle ol { margin: 8px 0 0 20px; }
+  .ai-idle li { margin-bottom: 5px; }
+
+  .ai-section {
+    margin-bottom: 10px; padding: 11px 13px;
+    background: white; border-radius: 10px;
+    border: 1px solid #cffafe;
+    font-size: 0.8rem; line-height: 1.6; color: #1e293b;
+  }
+  .ai-section .ai-title {
+    font-weight: 700; font-size: 0.8rem; color: #0891b2;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+    padding-bottom: 4px; border-bottom: 1px dashed #cffafe;
+  }
+  .ai-section code {
+    background: #f0fdfa; padding: 5px 8px; border-radius: 5px;
+    display: inline-block; margin: 3px 0;
+    font-family: 'Courier New', monospace; font-size: 0.75rem;
+    color: #0f766e; word-break: break-all;
+    border: 1px solid #a5f3fc;
+  }
+  .ai-section.success { background: #ecfdf5; border-color: #a7f3d0; }
+  .ai-section.success .ai-title { color: #059669; border-color: #a7f3d0; }
+  .ai-section.warning { background: #fffbeb; border-color: #fde68a; }
+  .ai-section.warning .ai-title { color: #d97706; border-color: #fde68a; }
+  .ai-section.danger { background: #fef2f2; border-color: #fecaca; }
+  .ai-section.danger .ai-title { color: #dc2626; border-color: #fecaca; }
+
+  .step-list {
+    list-style: none; padding: 0; margin: 8px 0;
+    counter-reset: step;
+  }
+  .step-list li {
+    padding: 8px 10px 8px 34px;
+    background: #f8fafc; border-radius: 6px;
+    margin-bottom: 5px; position: relative;
+    font-size: 0.78rem; line-height: 1.5;
+    counter-increment: step;
+  }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute; left: 8px; top: 8px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, #0891b2, #06b6d4); color: white;
+    font-size: 0.7rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-list .step-label {
+    display: block; font-weight: 700; color: #0e7490;
+    font-size: 0.72rem; margin-bottom: 2px;
+  }
+  .step-list .step-formula {
+    display: block; margin-top: 4px;
+    font-family: 'Courier New', monospace; font-size: 0.75rem;
+    background: white; padding: 5px 8px; border-radius: 4px;
+    color: #0f766e; border: 1px solid #a5f3fc;
+  }
+  .step-list .step-note {
+    font-size: 0.72rem; color: #64748b; margin-top: 3px;
+    font-style: italic;
+  }
+
+  .katex { color: #0f766e; }
+  .katex-display { margin: 6px 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 6px; margin: 8px 0;
+  }
+  .metric-box {
+    background: #f0fdfa; border: 1px solid #a5f3fc;
+    border-radius: 6px; padding: 6px 8px;
+  }
+  .metric-box .m-label {
+    font-size: 0.62rem; color: #0e7490; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+  .metric-box .m-value {
+    font-size: 0.82rem; font-weight: 800; color: #0f766e;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-box .m-value.good { color: #059669; }
+  .metric-box .m-value.warn { color: #d97706; }
+  .metric-box .m-value.bad { color: #dc2626; }
+
+  .ai-accordion {
+    background: white; border-radius: 10px;
+    border: 1px solid #cffafe;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .ai-accordion > summary {
+    padding: 10px 13px; cursor: pointer;
+    font-weight: 700; font-size: 0.82rem; color: #0891b2;
+    list-style: none; user-select: none;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.15s;
+  }
+  .ai-accordion > summary:hover { background: #f0fdfa; }
+  .ai-accordion > summary::-webkit-details-marker { display: none; }
+  .ai-accordion > summary::before {
+    content: '▸'; margin-right: 2px;
+    color: #06b6d4; font-size: 0.9rem;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .ai-accordion[open] > summary::before { transform: rotate(90deg); }
+  .ai-accordion[open] > summary {
+    background: #f0fdfa; border-bottom: 1px solid #cffafe;
+  }
+  .ai-accordion.safety > summary {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #991b1b;
+  }
+  .ai-accordion.safety > summary::before { color: #dc2626; }
+  .ai-accordion.safety[open] > summary {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border-bottom-color: #fca5a5;
+  }
+  .ai-accordion-body {
+    padding: 12px 14px;
+    font-size: 0.78rem; line-height: 1.6; color: #334155;
+  }
+  .ai-accordion-body p { margin-bottom: 8px; }
+  .ai-accordion-body p:last-child { margin-bottom: 0; }
+  .ai-accordion-body code {
+    background: #f0fdfa; padding: 2px 6px; border-radius: 4px;
+    font-family: 'Courier New', monospace; font-size: 0.74rem;
+    color: #0f766e; border: 1px solid #a5f3fc;
+  }
+  .ai-accordion-body ul { margin: 6px 0 6px 18px; }
+  .ai-accordion-body li { margin-bottom: 4px; }
+
+  .page-footer {
+    margin-top: 24px; padding: 20px 14px 12px 14px;
+    border-top: 1px solid rgba(8, 145, 178, 0.15);
+    text-align: center; font-size: 0.82rem;
+    color: #475569; line-height: 1.9;
+  }
+  .page-footer .footer-line { margin-bottom: 3px; }
+  .page-footer strong { color: #0e7490; font-weight: 800; }
+  .page-footer a {
+    color: #0891b2; text-decoration: none;
+    font-weight: 600; transition: color 0.15s;
+  }
+  .page-footer a:hover { color: #0e7490; text-decoration: underline; }
+  .page-footer .footer-sep { color: #94a3b8; margin: 0 8px; }
+  .page-footer .footer-credit {
+    font-size: 0.7rem; color: #94a3b8; margin-top: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 640px) {
+    .app { padding: 16px; border-radius: 26px; }
+    .header h1 { font-size: 1.35rem; }
+    .stopwatch-overlay { top: 12px; right: 12px; padding: 10px 16px; min-width: 150px; }
+    .sw-time { font-size: 1.9rem; }
+    .sw-progress { font-size: 0.65rem; }
+    .slope-info { font-size: 0.7rem; gap: 8px; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div>
+      <h1><i class="fas fa-atom"></i> Simple Pendulum Practical</h1>
+      <p>Lab precautions · live slope triangle · auto-computed g · AI tutor</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip"><i class="fas fa-database"></i> Points: <strong id="pointsCount">0</strong></div>
+      <div class="stat-chip"><i class="fas fa-calculator"></i> g<sub>exp</sub>: <strong id="gExpChip">—</strong></div>
+      <div class="stat-chip"><i class="fas fa-percentage"></i> Error: <strong id="errorChip">—</strong></div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <div class="left-col">
+      <div class="canvas-wrap">
+        <canvas id="pendulumCanvas" width="1000" height="500"></canvas>
+        <div class="stopwatch-overlay" id="stopwatchOverlay">
+          <div class="sw-label">Elapsed Time</div>
+          <div class="sw-time" id="swTime">00.00</div>
+          <div class="sw-unit">seconds</div>
+          <div class="sw-progress" id="swProgress">Ready · tap Release &amp; Time</div>
+        </div>
+      </div>
+
+      <div class="graph-card">
+        <div class="graph-header">
+          <h3><i class="fas fa-chart-line"></i> Graph of T² vs L — with live slope calculation</h3>
+          <div class="slope-info" id="slopeInfo">
+            <span>Add 2+ data points to see slope</span>
+          </div>
+        </div>
+        <div class="graph-legend">
+          <div class="legend-item"><span class="legend-dot data"></span> Data</div>
+          <div class="legend-item"><span class="legend-line fit"></span> Best-fit</div>
+          <div class="legend-item"><span class="legend-triangle"></span> Slope triangle (Δy/Δx)</div>
+          <div class="legend-item"><span class="legend-line theory"></span> Theory (g = <span id="theoryGLabel">9.80</span>)</div>
+        </div>
+        <canvas id="graphCanvas" width="1000" height="480"></canvas>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <!-- ============ SAFETY CARD ============ -->
+      <div class="card safety-card">
+        <h3><i class="fas fa-shield-alt"></i> Laboratory Precautions</h3>
+        <ul class="safety-list">
+          <li><strong>Small amplitude ≤ 15°</strong> — keeps the small-angle approximation (and the SHM formula) valid.</li>
+          <li><strong>Time 20+ oscillations</strong> — reduces human reaction-time error to negligible levels.</li>
+          <li><strong>Measure L from the pivot to the centre of the bob</strong> — not to the top of the string.</li>
+          <li><strong>Time at equilibrium</strong> — the bob is fastest there, so start/stop the timer when it passes the mid-point.</li>
+          <li><strong>Swing in a single plane</strong> — no conical or elliptical motion, which breaks SHM.</li>
+          <li><strong>Firmly clamp the retort stand</strong> — an unstable stand can topple and cause injury.</li>
+          <li><strong>Same pivot, same string, same bob</strong> for every trial — only L should change.</li>
+          <li><strong>Repeat each length 3× and average</strong> — random errors cancel out.</li>
+        </ul>
+        <div class="safety-note">
+          💡 <strong>Full detailed precautions</strong> and the ideal step-by-step procedure are in the AI Physics Tutor panel below. Expand the red "Laboratory Precautions" section first.
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fas fa-sliders-h"></i> Experiment Controls</h3>
+        <div class="slider-group">
+          <label>Length L <strong id="lengthVal">0.80 m</strong></label>
+          <input type="range" id="lengthSlider" min="0.20" max="1.00" value="0.80" step="0.01">
+          <div class="quick-lengths" id="quickLengths">
+            <span>Quick:</span>
+            <button data-l="0.2">0.20</button>
+            <button data-l="0.4">0.40</button>
+            <button data-l="0.6">0.60</button>
+            <button data-l="0.8" class="active">0.80</button>
+            <button data-l="1.0">1.00</button>
+          </div>
+        </div>
+        <div class="slider-group">
+          <label>Oscillations N <strong id="nVal">10</strong></label>
+          <select id="nSelect">
+            <option value="5">5 oscillations</option>
+            <option value="10" selected>10 oscillations</option>
+            <option value="15">15 oscillations</option>
+            <option value="20">20 oscillations</option>
+          </select>
+        </div>
+        <div class="slider-group">
+          <label>Gravity g <strong id="gVal">9.80 m/s²</strong></label>
+          <select id="gSelect">
+            <option value="9.8">🌍 Earth (9.8 m/s²)</option>
+            <option value="1.6">🌙 Moon (1.6 m/s²)</option>
+            <option value="3.7">🔴 Mars (3.7 m/s²)</option>
+            <option value="24.8">🪐 Jupiter (24.8 m/s²)</option>
+          </select>
+        </div>
+        <div class="predict-box" id="predictBox">
+          📐 Predicted: <strong id="predT">T ≈ —</strong> · <strong id="predT2">T² ≈ —</strong>
+        </div>
+        <div class="est-time">
+          <i class="fas fa-clock"></i>
+          <span>Duration: <strong id="estTime">17.9 s</strong></span>
+        </div>
+        <button class="btn btn-primary" id="startBtn">
+          <i class="fas fa-play"></i> Release &amp; Time
+        </button>
+      </div>
+
+      <div class="card">
+        <h3><i class="fas fa-table"></i> Recorded Data</h3>
+        <div class="table-wrap">
+          <table id="dataTable">
+            <thead>
+              <tr>
+                <th>#</th><th>L</th><th>N</th><th>t (s)</th><th>T (s)</th><th>T² (s²)</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="table-empty" id="tableEmpty">No data yet. Run your first experiment.</div>
+        <button class="btn btn-danger" id="clearDataBtn" style="margin-top: 8px;">
+          <i class="fas fa-trash"></i> Clear All Data
+        </button>
+      </div>
+
+      <div class="card ai-panel" id="aiPanel">
+        <div class="ai-panel-header">
+          <i class="fas fa-robot"></i> AI Physics Tutor
+          <span class="ai-badge">Live Analysis</span>
+        </div>
+        <div class="ai-scroll" id="aiScroll">
+          <div id="aiContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <div class="footer-line">
+      🎓 <strong>Designed by Bamidele Sunday</strong> · CEO, Complete Solution Educational Services
+    </div>
+    <div class="footer-line">
+      📞 <a href="tel:08060180586">08060180586</a>
+      <span class="footer-sep">·</span>
+      ✉️ <a href="mailto:bamideles249@gmail.com">bamideles249@gmail.com</a>
+    </div>
+    <div class="footer-credit">© 2026 · Simple Pendulum Physics Practical · All rights reserved</div>
+  </footer>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== KATEX HELPERS ====================
+  function M(latex) {
+    if (typeof katex === 'undefined') return '<code>' + latex + '</code>';
+    try { return katex.renderToString(latex, { throwOnError: false, displayMode: false }); }
+    catch (e) { return '<code>' + latex + '</code>'; }
+  }
+  function MD(latex) {
+    if (typeof katex === 'undefined') return '<div><code>' + latex + '</code></div>';
+    try { return katex.renderToString(latex, { throwOnError: false, displayMode: true }); }
+    catch (e) { return '<div><code>' + latex + '</code></div>'; }
+  }
+
+  // ==================== STATE ====================
+  const state = {
+    L: 0.80, N: 10, g: 9.8, amp: 15,
+    isTiming: false, startTime: 0, currentTime: 0, totalTime: 0,
+    data: [], animationId: null,
+  };
+
+  const $ = id => document.getElementById(id);
+
+  const pendulumCanvas = $('pendulumCanvas');
+  const pctx = pendulumCanvas.getContext('2d');
+  const PW = pendulumCanvas.width, PH = pendulumCanvas.height;
+
+  const graphCanvas = $('graphCanvas');
+  const gctx = graphCanvas.getContext('2d');
+  const GW = graphCanvas.width, GH = graphCanvas.height;
+
+  // ==================== PHYSICS ====================
+  function computeT() { return 2 * Math.PI * Math.sqrt(state.L / state.g); }
+
+  function computeBestFitSlope() {
+    let num = 0, den = 0;
+    for (const p of state.data) { num += p.L * p.T2; den += p.L * p.L; }
+    return den > 0 ? num / den : 0;
+  }
+
+  function computeLinearFit() {
+    const n = state.data.length;
+    if (n < 2) return { slope: null, intercept: null, r2: null };
+    const xs = state.data.map(d => d.L);
+    const ys = state.data.map(d => d.T2);
+    const sumX = xs.reduce((a, b) => a + b, 0);
+    const sumY = ys.reduce((a, b) => a + b, 0);
+    const sumXY = xs.reduce((a, x, i) => a + x * ys[i], 0);
+    const sumX2 = xs.reduce((a, x) => a + x * x, 0);
+    const denom = n * sumX2 - sumX * sumX;
+    if (Math.abs(denom) < 1e-12) return { slope: null, intercept: null, r2: null };
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+    const yMean = sumY / n;
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) {
+      const pred = slope * xs[i] + intercept;
+      ssRes += (ys[i] - pred) ** 2;
+      ssTot += (ys[i] - yMean) ** 2;
+    }
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : null;
+    return { slope, intercept, r2 };
+  }
+
+  // ==================== PENDULUM DRAWING ====================
+  function drawPendulum(theta) {
+    const ctx = pctx;
+    const grad = ctx.createLinearGradient(0, 0, 0, PH);
+    grad.addColorStop(0, '#ecfeff');
+    grad.addColorStop(1, '#cffafe');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, PW, PH);
+
+    ctx.strokeStyle = 'rgba(8, 145, 178, 0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < PW; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, PH); ctx.stroke(); }
+    for (let y = 0; y < PH; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(PW, y); ctx.stroke(); }
+
+    const pivotX = PW / 2, pivotY = 70, scale = 320;
+    const lenPx = state.L * scale;
+    const ampRad = state.amp * Math.PI / 180;
+
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, lenPx, Math.PI/2 - ampRad, Math.PI/2 + ampRad);
+    ctx.strokeStyle = 'rgba(8, 145, 178, 0.22)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 8]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY + 20);
+    ctx.lineTo(pivotX, pivotY + lenPx + 60);
+    ctx.strokeStyle = 'rgba(8, 145, 178, 0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(8, 145, 178, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(8, 145, 178, 0.65)';
+    ctx.font = '11px sans-serif';
+    for (let m = 0.2; m <= 1.0; m += 0.2) {
+      const y = pivotY + m * scale;
+      ctx.beginPath(); ctx.moveTo(pivotX + 130, y); ctx.lineTo(pivotX + 150, y); ctx.stroke();
+      ctx.fillText(m.toFixed(1) + 'm', pivotX + 156, y + 4);
+    }
+
+    const bobX = pivotX + lenPx * Math.sin(theta);
+    const bobY = pivotY + lenPx * Math.cos(theta);
+
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(pivotX - 110, pivotY - 16, 220, 16);
+    ctx.fillStyle = '#1e293b';
+    for (let i = -110; i <= 110; i += 25) ctx.fillRect(pivotX + i - 2, pivotY - 28, 4, 14);
+
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#475569'; ctx.fill();
+    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY); ctx.lineTo(bobX, bobY);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2.5; ctx.stroke();
+
+    const bobR = 26;
+    const glow = ctx.createRadialGradient(bobX, bobY, 0, bobX, bobY, bobR * 2.2);
+    glow.addColorStop(0, 'rgba(220, 38, 38, 0.45)');
+    glow.addColorStop(1, 'rgba(220, 38, 38, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(bobX, bobY, bobR * 2.2, 0, Math.PI * 2); ctx.fill();
+
+    const bobGrad = ctx.createRadialGradient(bobX - 8, bobY - 8, 2, bobX, bobY, bobR);
+    bobGrad.addColorStop(0, '#fca5a5');
+    bobGrad.addColorStop(1, '#dc2626');
+    ctx.beginPath(); ctx.arc(bobX, bobY, bobR, 0, Math.PI * 2);
+    ctx.fillStyle = bobGrad; ctx.fill();
+    ctx.strokeStyle = '#991b1b'; ctx.lineWidth = 2; ctx.stroke();
+
+    const deg = theta * 180 / Math.PI;
+    ctx.fillStyle = '#0e7490';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`θ = ${deg >= 0 ? '+' : ''}${deg.toFixed(1)}°`, 30, 40);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(`L = ${state.L.toFixed(2)} m`, 30, PH - 42);
+    ctx.fillStyle = '#0891b2';
+    ctx.fillText(`T (theory) = ${computeT().toFixed(3)} s`, 30, PH - 20);
+  }
+
+  // ==================== GRAPH ====================
+  function niceRange(maxVal, targetTicks) {
+    if (maxVal <= 0) return { max: 1, step: 0.2, ticks: 5 };
+    const steps = [0.05, 0.1, 0.2, 0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 20.0, 50.0];
+    const target = maxVal * 1.15;
+    for (const s of steps) {
+      if (target / s <= targetTicks + 2) {
+        const ticks = Math.ceil(target / s);
+        return { max: ticks * s, step: s, ticks };
+      }
+    }
+    return { max: target, step: target / targetTicks, ticks: targetTicks };
+  }
+
+  function renderGraph() {
+    const ctx = gctx;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, GW, GH);
+
+    const pad = { left: 85, right: 50, top: 55, bottom: 75 };
+    const plotW = GW - pad.left - pad.right;
+    const plotH = GH - pad.top - pad.bottom;
+
+    let maxL = 0.5, maxT2 = 2.0;
+    if (state.data.length > 0) {
+      maxL = Math.max(...state.data.map(d => d.L));
+      maxT2 = Math.max(...state.data.map(d => d.T2));
+    }
+    const xRange = niceRange(Math.max(maxL, 0.5), 6);
+    const theoreticalSlope = 4 * Math.PI * Math.PI / state.g;
+    const fitSlope = computeBestFitSlope();
+    const gExp = fitSlope > 0 ? 4 * Math.PI * Math.PI / fitSlope : null;
+    const yForLine = Math.max(fitSlope * xRange.max, theoreticalSlope * xRange.max);
+    const yRange = niceRange(Math.max(maxT2, yForLine, 1.0), 5);
+
+    const xMax = xRange.max, yMax = yRange.max;
+    function tx(L) { return pad.left + (L / xMax) * plotW; }
+    function ty(T2) { return pad.top + plotH - (T2 / yMax) * plotH; }
+
+    ctx.strokeStyle = '#f1f5f9';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= xRange.ticks; i++) {
+      const x = tx(i * xRange.step);
+      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    }
+    for (let i = 1; i <= yRange.ticks; i++) {
+      const y = ty(i * yRange.step);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, pad.top + plotH);
+    ctx.lineTo(pad.left + plotW, pad.top + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= xRange.ticks; i++) {
+      const val = i * xRange.step;
+      const x = tx(val);
+      ctx.beginPath(); ctx.moveTo(x, pad.top + plotH); ctx.lineTo(x, pad.top + plotH + 7); ctx.stroke();
+      ctx.fillText(val.toFixed(2), x, pad.top + plotH + 24);
+    }
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= yRange.ticks; i++) {
+      const val = i * yRange.step;
+      const y = ty(val);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left - 7, y); ctx.stroke();
+      ctx.fillText(val.toFixed(2), pad.left - 12, y + 4);
+    }
+
+    ctx.fillStyle = '#0e7490';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Length L (m)', pad.left + plotW / 2, GH - 22);
+    ctx.save();
+    ctx.translate(28, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('T² (s²)', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Graph of T² vs L', pad.left, 28);
+
+    const theoryYEnd = theoreticalSlope * xMax;
+    if (theoryYEnd <= yMax) {
+      ctx.beginPath();
+      ctx.moveTo(tx(0), ty(0));
+      ctx.lineTo(tx(xMax), ty(theoryYEnd));
+      ctx.strokeStyle = 'rgba(124, 58, 237, 0.55)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (state.data.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Run your first experiment to plot data', pad.left + plotW / 2, pad.top + plotH / 2);
+      return;
+    }
+
+    if (state.data.length >= 2 && fitSlope > 0) {
+      const Ls = state.data.map(d => d.L);
+      const useX1 = Math.max(0, Math.min(...Ls));
+      const useX2 = Math.min(xMax, Math.max(...Ls));
+      const y1 = fitSlope * useX1;
+      const y2 = fitSlope * useX2;
+
+      if (useX2 > useX1 + 0.01 && y2 <= yMax) {
+        const px1 = tx(useX1), py1 = ty(y1);
+        const px2 = tx(useX2), py2 = ty(y2);
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(px1, py1);
+        ctx.lineTo(px2, py1);
+        ctx.lineTo(px2, py2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px2, py1);
+        ctx.lineTo(px2, py2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px1, py1);
+        ctx.lineTo(px2, py1);
+        ctx.stroke();
+        ctx.restore();
+
+        const midXRun = (px1 + px2) / 2;
+        ctx.save();
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        const runText = `Δx = ${(useX2 - useX1).toFixed(2)} m`;
+        const runW = ctx.measureText(runText).width + 12;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+        ctx.beginPath();
+        ctx.roundRect(midXRun - runW / 2, py1 + 5, runW, 18, 5);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(runText, midXRun, py1 + 18);
+        ctx.restore();
+
+        const midYRun = (py1 + py2) / 2;
+        ctx.save();
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        const riseText = `Δy = ${(y2 - y1).toFixed(3)} s²`;
+        const riseW = ctx.measureText(riseText).width + 12;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+        ctx.beginPath();
+        ctx.roundRect(px2 + 8, midYRun - 9, riseW, 18, 5);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(riseText, px2 + 14, midYRun + 4);
+        ctx.restore();
+
+        const markSize = 10;
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px2 - markSize, py1);
+        ctx.lineTo(px2 - markSize, py1 - markSize);
+        ctx.lineTo(px2, py1 - markSize);
+        ctx.stroke();
+      }
+    }
+
+    if (state.data.length >= 2 && fitSlope > 0) {
+      const yEnd = fitSlope * xMax;
+      ctx.beginPath();
+      ctx.moveTo(tx(0), ty(0));
+      ctx.lineTo(tx(xMax), ty(Math.min(yEnd, yMax)));
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.setLineDash(state.data.length < 3 ? [8, 6] : []);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    state.data.forEach((d, i) => {
+      const x = tx(d.L), y = ty(d.T2);
+      if (y < pad.top || y > pad.top + plotH) return;
+      ctx.beginPath();
+      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#06b6d4';
+      ctx.fill();
+      ctx.strokeStyle = '#0891b2';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(i + 1), x, y + 3.5);
+    });
+
+    if (state.data.length >= 2 && fitSlope > 0 && gExp) {
+      const Ls = state.data.map(d => d.L);
+      const useX1 = Math.max(0, Math.min(...Ls));
+      const useX2 = Math.min(xMax, Math.max(...Ls));
+      const dY = (useX2 - useX1) * fitSlope;
+      const dX = useX2 - useX1;
+
+      const boxW = 290, boxH = 148;
+      const boxX = pad.left + 20, boxY = pad.top + 20;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+      ctx.fill();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, 4, boxH, 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 12px "Segoe UI", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('📐 SLOPE CALCULATION', boxX + 14, boxY + 22);
+
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(boxX + 14, boxY + 30);
+      ctx.lineTo(boxX + boxW - 14, boxY + 30);
+      ctx.stroke();
+
+      ctx.font = '11px "Courier New", monospace';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(`Δy  = ${dY.toFixed(3)} s²`, boxX + 14, boxY + 52);
+      ctx.fillText(`Δx  = ${dX.toFixed(3)} m`, boxX + 14, boxY + 70);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      ctx.fillText(`k   = Δy / Δx`, boxX + 14, boxY + 92);
+
+      ctx.fillStyle = '#fde68a';
+      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.fillText(`    = ${fitSlope.toFixed(4)} s²/m`, boxX + 14, boxY + 110);
+
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)';
+      ctx.beginPath();
+      ctx.moveTo(boxX + 14, boxY + 118);
+      ctx.lineTo(boxX + boxW - 14, boxY + 118);
+      ctx.stroke();
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.fillText(`g   = 4π² / k`, boxX + 14, boxY + 134);
+      ctx.fillStyle = '#86efac';
+      ctx.font = 'bold 13px "Courier New", monospace';
+      ctx.fillText(`    = ${gExp.toFixed(2)} m/s²`, boxX + 130, boxY + 134);
+
+      ctx.restore();
+    }
+  }
+
+  // ==================== AI TUTOR ====================
+  function renderAIAnalysis() {
+    const el = $('aiContent');
+    let html = '';
+
+    if (state.data.length === 0) {
+      html += `
+        <div class="ai-idle">
+          <p style="font-weight:700; color:#0e7490; margin-bottom:8px;">👋 Welcome to the pendulum lab!</p>
+          <p style="margin-bottom:10px;">I'm your AI physics tutor. Read the precautions first, then follow these steps:</p>
+          <ol>
+            <li><strong style="color:#dc2626;">Read the laboratory precautions (red section below)</strong></li>
+            <li>Pick a <strong>length L</strong> (start around 0.80 m)</li>
+            <li>Choose <strong>N oscillations</strong> (10 is a good balance)</li>
+            <li>Click <strong>Release &amp; Time</strong> — I'll time it automatically</li>
+            <li>Repeat at 5 different lengths (0.2 → 1.0 m)</li>
+            <li>Watch the slope triangle and calculation box appear on the graph</li>
+            <li>Read off <strong>g</strong> from the slope</li>
+          </ol>
+        </div>
+      `;
+      html += getConceptAccordions();
+      el.innerHTML = html;
+      return;
+    }
+
+    const last = state.data[state.data.length - 1];
+    const Ttheo = 2 * Math.PI * Math.sqrt(last.L / last.g);
+    const errT = Math.abs(last.T - Ttheo) / Ttheo * 100;
+    const ratio = last.T2 / last.L;
+    const ratioIdeal = 4 * Math.PI * Math.PI / last.g;
+    const ratioErr = Math.abs(ratio - ratioIdeal) / ratioIdeal * 100;
+
+    let verdictClass = 'success';
+    let verdictIcon = '✅';
+    let verdictText = 'Excellent measurement';
+    if (errT > 5) { verdictClass = 'danger'; verdictIcon = '⚠️'; verdictText = 'Large error — check technique'; }
+    else if (errT > 2) { verdictClass = 'warning'; verdictIcon = '🟡'; verdictText = 'Acceptable, small error'; }
+
+    html += `
+      <div class="ai-section ${verdictClass}">
+        <div class="ai-title"><i class="fas fa-flag-checkered"></i> Trial ${state.data.length} — ${verdictIcon} ${verdictText}</div>
+        <div class="metric-grid">
+          <div class="metric-box"><div class="m-label">Length L</div><div class="m-value">${last.L.toFixed(2)} m</div></div>
+          <div class="metric-box"><div class="m-label">Oscillations N</div><div class="m-value">${last.N}</div></div>
+          <div class="metric-box"><div class="m-label">Time t</div><div class="m-value">${last.t.toFixed(2)} s</div></div>
+          <div class="metric-box"><div class="m-label">Period T = t/N</div><div class="m-value">${last.T.toFixed(3)} s</div></div>
+          <div class="metric-box"><div class="m-label">T²</div><div class="m-value">${last.T2.toFixed(3)} s²</div></div>
+          <div class="metric-box"><div class="m-label">T²/L</div><div class="m-value ${ratioErr < 2 ? 'good' : ratioErr < 5 ? 'warn' : 'bad'}">${ratio.toFixed(3)} s²/m</div></div>
+        </div>
+      </div>
+    `;
+
+    html += `
+      <div class="ai-section">
+        <div class="ai-title"><i class="fas fa-list-ol"></i> Step-by-step calculation</div>
+        <ol class="step-list">
+          <li>
+            <span class="step-label">Measure total time</span>
+            You timed <strong>${last.N}</strong> oscillations: <strong>t = ${last.t.toFixed(2)} s</strong>
+          </li>
+          <li>
+            <span class="step-label">Find the period</span>
+            <span class="step-formula">T = t / N = ${last.t.toFixed(2)} / ${last.N} = ${last.T.toFixed(3)} s</span>
+          </li>
+          <li>
+            <span class="step-label">Square the period</span>
+            <span class="step-formula">T² = ${last.T.toFixed(3)}² = ${last.T2.toFixed(3)} s²</span>
+          </li>
+          <li>
+            <span class="step-label">Compare with theory</span>
+            <span class="step-formula">T_theory = 2π√(${last.L.toFixed(2)}/${last.g}) = ${Ttheo.toFixed(3)} s</span>
+            <span class="step-note">Your measurement is off by ${errT.toFixed(2)}%.</span>
+          </li>
+          <li>
+            <span class="step-label">Check the constant T²/L</span>
+            <span class="step-formula">T²/L = ${last.T2.toFixed(3)} / ${last.L.toFixed(2)} = ${ratio.toFixed(3)} s²/m</span>
+            Expected: ${M('4\\pi^2/g = ' + ratioIdeal.toFixed(3))} s²/m · error ${ratioErr.toFixed(2)}%
+          </li>
+        </ol>
+      </div>
+    `;
+
+    if (state.data.length >= 2) {
+      const fitSlope = computeBestFitSlope();
+      const linear = computeLinearFit();
+      const gExp = 4 * Math.PI * Math.PI / fitSlope;
+      const gErr = Math.abs(gExp - state.g) / state.g * 100;
+
+      let gVerdict = 'success';
+      let gIcon = '🏆';
+      let gText = 'Outstanding — under 3% error!';
+      if (gErr >= 15) { gVerdict = 'danger'; gIcon = '⚠️'; gText = 'High error — add more spread-out points'; }
+      else if (gErr >= 7) { gVerdict = 'warning'; gIcon = '📊'; gText = 'Moderate error — try more lengths'; }
+      else if (gErr >= 3) { gVerdict = 'warning'; gIcon = '👍'; gText = 'Good — under 7% error'; }
+
+      let r2Class = 'good';
+      let r2Text = 'Excellent linearity';
+      if (linear.r2 !== null) {
+        if (linear.r2 < 0.9) { r2Class = 'bad'; r2Text = 'Poor — data is scattered'; }
+        else if (linear.r2 < 0.97) { r2Class = 'warn'; r2Text = 'Good but improvable'; }
+      }
+
+      html += `
+        <div class="ai-section ${gVerdict}">
+          <div class="ai-title"><i class="fas fa-chart-line"></i> Graph Analysis — ${gIcon} ${gText}</div>
+          <div class="metric-grid">
+            <div class="metric-box"><div class="m-label">Points</div><div class="m-value">${state.data.length}</div></div>
+            <div class="metric-box"><div class="m-label">Slope k</div><div class="m-value">${fitSlope.toFixed(4)} s²/m</div></div>
+            <div class="metric-box"><div class="m-label">R²</div><div class="m-value ${r2Class}">${linear.r2 !== null ? linear.r2.toFixed(5) : '—'}</div></div>
+            <div class="metric-box"><div class="m-label">y-intercept</div><div class="m-value">${linear.intercept !== null ? linear.intercept.toFixed(4) : '—'}</div></div>
+            <div class="metric-box"><div class="m-label">g from slope</div><div class="m-value ${gVerdict === 'success' ? 'good' : gVerdict === 'warning' ? 'warn' : 'bad'}">${gExp.toFixed(3)} m/s²</div></div>
+            <div class="metric-box"><div class="m-label">Expected g</div><div class="m-value">${state.g.toFixed(2)} m/s²</div></div>
+          </div>
+          <div style="margin-top:8px; font-size:0.76rem; line-height:1.55; color:#475569;">
+            <strong>R²</strong> near 1.0 means your points form a perfect straight line (${r2Text.toLowerCase()}).<br>
+            <strong>y-intercept</strong> should be ≈ 0 if you measure from the pivot (yours: ${linear.intercept !== null ? linear.intercept.toFixed(4) : '—'}).
+          </div>
+        </div>
+      `;
+
+      html += `
+        <div class="ai-section">
+          <div class="ai-title"><i class="fas fa-square-root-alt"></i> How the slope gives us g</div>
+          <p style="margin-bottom:6px;">The pendulum formula:</p>
+          ${MD('T = 2\\pi\\sqrt{\\frac{L}{g}}')}
+          <p style="margin:6px 0;">Square both sides to linearise:</p>
+          ${MD('T^2 = \\frac{4\\pi^2}{g} \\cdot L')}
+          <p style="margin:6px 0;">Now ${M('T^2')} is plotted against ${M('L')} — a straight line through the origin with slope:</p>
+          ${MD('k = \\frac{4\\pi^2}{g}')}
+          <p style="margin:6px 0;">Rearranging:</p>
+          ${MD('g = \\frac{4\\pi^2}{k} = \\frac{4\\pi^2}{' + fitSlope.toFixed(4) + '} = ' + gExp.toFixed(3) + '\\ \\text{m/s}^2')}
+          <p style="margin-top:8px; font-size:0.74rem; color:#64748b;">
+            Your slope is <strong>${fitSlope.toFixed(4)} s²/m</strong>. Every extra metre of length adds this much to T². Smaller slope = bigger g.
+          </p>
+        </div>
+      `;
+    } else if (state.data.length === 1) {
+      html += `
+        <div class="ai-section warning">
+          <div class="ai-title"><i class="fas fa-info-circle"></i> Next step</div>
+          One point recorded. Add <strong>at least one more at a different length</strong> to see the slope triangle and calculation on the graph.
+          Try a length ${last.L < 0.6 ? 'like <strong>1.00 m</strong>' : 'like <strong>0.40 m</strong>'} next.
+        </div>
+      `;
+    }
+
+    html += getConceptAccordions();
+    el.innerHTML = html;
+  }
+
+  // ==================== CONCEPT ACCORDIONS (incl. PRECAUTIONS) ====================
+  function getConceptAccordions() {
+    return `
+      <details class="ai-accordion safety" open>
+        <summary>🛡️ Laboratory Precautions &amp; Safety — READ FIRST</summary>
+        <div class="ai-accordion-body">
+          <p style="color:#991b1b; font-weight:700; margin-bottom:10px;">⚠️ Before starting the practical, review these precautions. They protect both you and the accuracy of your results.</p>
+
+          <div class="precaution-section">
+            <h4>🦺 Safety in the Laboratory</h4>
+            <ul>
+              <li><strong>Firmly clamp the retort stand</strong> to a stable bench — an unstable stand can topple and cause injury.</li>
+              <li><strong>Keep hands, face and loose clothing clear</strong> of the swing plane.</li>
+              <li><strong>Tie back long hair and remove dangling jewellery</strong> before starting.</li>
+              <li><strong>Use a compact, moderately heavy bob</strong> — too light → air currents dominate; too heavy → strains the clamp.</li>
+              <li><strong>Ensure at least 20 cm of clear space</strong> in every direction while the bob swings.</li>
+              <li><strong>Keep the apparatus away from table edges, water, and other students' workstations.</strong></li>
+              <li><strong>Do not release from a large angle</strong> — the bob could hit nearby equipment.</li>
+              <li><strong>Report broken glass / damaged apparatus</strong> to the supervisor immediately.</li>
+            </ul>
+          </div>
+
+          <div class="precaution-section">
+            <h4>📏 Accuracy of Measurements</h4>
+            <ul>
+              <li><strong>Amplitude ≤ 15°</strong> — the SHM formula is only valid for small angles. Larger swings make T appear larger than predicted.</li>
+              <li><strong>Measure L from the pivot to the centre of the bob</strong> — not to the top of the string or the top of the bob.</li>
+              <li><strong>Time at least 20 oscillations</strong> — reduces human reaction-time error from ~0.2 s per oscillation to ~0.01 s.</li>
+              <li><strong>Start/stop timing when the bob passes equilibrium</strong> — it moves fastest there, so timing is most precise.</li>
+              <li><strong>Use a fiducial marker</strong> (a card or line behind the equilibrium point) as a fixed visual reference.</li>
+              <li><strong>Release without pushing</strong> — let the bob start from rest so amplitude is well-defined.</li>
+              <li><strong>Repeat each length 3 times</strong>, then average — random errors cancel.</li>
+              <li><strong>Check for stopwatch zero error</strong> — a systematic offset corrupts every reading.</li>
+            </ul>
+          </div>
+
+          <div class="precaution-section">
+            <h4>🔬 Proper Technique</h4>
+            <ul>
+              <li><strong>Swing in a single plane</strong> — no conical or elliptical motion. A swing tracing an ellipse is not SHM.</li>
+              <li><strong>Wait for the swing to settle</strong> before timing — the first few oscillations may be irregular.</li>
+              <li><strong>Close windows / turn off fans</strong> — air currents disturb the swing and slow the bob.</li>
+              <li><strong>Use the same string and bob for every trial</strong> — changing them changes the physics.</li>
+              <li><strong>Keep the same pivot for every trial</strong> — moving the pivot changes L.</li>
+              <li><strong>Keep the same g</strong> — all trials on the same bench, same altitude.</li>
+              <li><strong>Record raw data first</strong> (L, t, N), then compute T and T² — never work backwards from theory.</li>
+              <li><strong>Plot T² vs L, not T vs L</strong> — only T² vs L gives a straight line through the origin.</li>
+            </ul>
+          </div>
+
+          <div class="precaution-section">
+            <h4>⚠️ Common Mistakes to Avoid</h4>
+            <ul>
+              <li><strong>Counting a half-swing as one oscillation</strong> — a full oscillation goes: equilibrium → extreme → equilibrium → other extreme → equilibrium.</li>
+              <li><strong>Starting the timer after the bob is already moving</strong> — start on a pass through equilibrium.</li>
+              <li><strong>Measuring length to the top of the bob</strong> instead of its centre — this introduces a systematic offset.</li>
+              <li><strong>Using a large amplitude (>15°)</strong> — the small-angle approximation breaks down.</li>
+              <li><strong>Using lengths that are too close together</strong> (e.g. 0.80, 0.82, 0.84 m) — the slope becomes poorly determined.</li>
+              <li><strong>Pulling the bob sideways then letting go</strong> — always release from rest, no push.</li>
+            </ul>
+          </div>
+
+          <div class="precaution-section">
+            <h4>🎯 Ideal Experimental Procedure (Summary)</h4>
+            <ol>
+              <li>Set up a stable retort stand with a firm clamp.</li>
+              <li>Attach a light, inextensible string of the desired length.</li>
+              <li>Hang a compact heavy bob from the string.</li>
+              <li>Adjust string length to L = 0.20, 0.40, 0.60, 0.80, 1.00 m (pivot to centre of bob).</li>
+              <li>Displace the bob ≤ 15° from vertical and release gently.</li>
+              <li>After the first swing settles, start the timer as the bob passes equilibrium.</li>
+              <li>Count 20 oscillations and stop the timer at the same equilibrium point.</li>
+              <li>Record L, N, t. Compute T = t/N and T².</li>
+              <li>Repeat for all 5 lengths. Repeat each length 3× if time permits.</li>
+              <li>Plot T² vs L. Draw best-fit line through the origin.</li>
+              <li>Slope k = 4π²/g → g = 4π²/k. Compare with 9.8 m/s².</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>💡 What is Simple Harmonic Motion?</summary>
+        <div class="ai-accordion-body">
+          <p><strong>SHM</strong> is an oscillation where the restoring force is <em>proportional to displacement</em> and points back toward equilibrium:</p>
+          ${MD('F = -kx')}
+          <p>For a pendulum, the tangential component of gravity is:</p>
+          ${MD('F = -mg\\sin\\theta \\approx -mg\\theta \\quad (\\theta\\text{ small})')}
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>💡 Why is T² proportional to L?</summary>
+        <div class="ai-accordion-body">
+          <p>From ${M('T = 2\\pi\\sqrt{L/g}')}, squaring both sides gives:</p>
+          ${MD('T^2 = \\frac{4\\pi^2}{g}\\,L')}
+          <p>This is linear in ${M('L')} — form ${M('y = mx')}. That's why we plot T² vs L, not T vs L.</p>
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>💡 Why is the slope 4π²/g?</summary>
+        <div class="ai-accordion-body">
+          <p>Comparing ${M('T^2 = \\frac{4\\pi^2}{g} L')} to ${M('y = mx')}:</p>
+          ${MD('\\text{slope } m = \\frac{4\\pi^2}{g} \\;\\Longleftrightarrow\\; g = \\frac{4\\pi^2}{\\text{slope}}')}
+          <p>The slope triangle on the graph shows this directly — Δy is T², Δx is L, and their ratio is ${M('4\\pi^2/g')}.</p>
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>💡 Why doesn't amplitude affect period?</summary>
+        <div class="ai-accordion-body">
+          <p>This is <strong>isochronism</strong>. A larger swing has a bigger restoring force but a longer arc — the two cancel. Holds for small angles (≤ 15°).</p>
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>⚠️ Sources of Experimental Error</summary>
+        <div class="ai-accordion-body">
+          <ul>
+            <li><strong>Human reaction time</strong> — ±0.1–0.2 s; reduce by timing many oscillations.</li>
+            <li><strong>Small-angle approximation</strong> — valid only for θ ≤ 15°.</li>
+            <li><strong>Measuring L</strong> — should be pivot to bob's <em>centre</em>.</li>
+            <li><strong>Air resistance</strong> — damps large swings.</li>
+            <li><strong>Bob size</strong> — real bobs aren't point masses.</li>
+            <li><strong>String mass</strong> — ideal string is massless.</li>
+            <li><strong>Pivot friction</strong> — slow energy loss.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="ai-accordion">
+        <summary>📐 Full derivation of T = 2π√(L/g)</summary>
+        <div class="ai-accordion-body">
+          <p><strong>Step 1 — Newton's 2nd law (tangential):</strong></p>
+          ${MD('m\\frac{d^2 s}{dt^2} = -mg\\sin\\theta')}
+          <p>With ${M('s = L\\theta')}:</p>
+          ${MD('L\\frac{d^2\\theta}{dt^2} = -g\\sin\\theta')}
+          <p><strong>Step 2 — Small-angle:</strong> ${M('\\sin\\theta \\approx \\theta')}:</p>
+          ${MD('\\frac{d^2\\theta}{dt^2} = -\\frac{g}{L}\\theta')}
+          <p>This is SHM with ${M('\\omega^2 = g/L')}.</p>
+          <p><strong>Step 3 — Period:</strong></p>
+          ${MD('T = \\frac{2\\pi}{\\omega} = 2\\pi\\sqrt{\\frac{L}{g}}')}
+          <p><strong>Step 4 — Linearise:</strong></p>
+          ${MD('T^2 = \\frac{4\\pi^2}{g}\\,L')}
+        </div>
+      </details>
+    `;
+  }
+
+  // ==================== SLOPE INFO CHIPS ====================
+  function updateSlopeInfo() {
+    const el = $('slopeInfo');
+    const chip = $('gExpChip');
+    const errChip = $('errorChip');
+
+    if (state.data.length < 2) {
+      el.innerHTML = `<span>Add ${2 - state.data.length} more point${2 - state.data.length > 1 ? 's' : ''} to see slope</span>`;
+      chip.textContent = '—';
+      errChip.textContent = '—';
+      errChip.style.color = '';
+      return;
+    }
+    const slope = computeBestFitSlope();
+    const gExp = 4 * Math.PI * Math.PI / slope;
+    const errPct = Math.abs(gExp - state.g) / state.g * 100;
+    el.innerHTML = `
+      <span>Slope: <strong>${slope.toFixed(3)} s²/m</strong></span>
+      <span>g<sub>exp</sub>: <strong>${gExp.toFixed(2)} m/s²</strong></span>
+    `;
+    chip.textContent = gExp.toFixed(2) + ' m/s²';
+    const errColor = errPct < 3 ? '#10b981' : (errPct < 10 ? '#f59e0b' : '#dc2626');
+    errChip.textContent = errPct.toFixed(1) + '%';
+    errChip.style.color = errColor;
+  }
+
+  // ==================== DATA TABLE ====================
+  function renderTable() {
+    const tbody = $('tableBody');
+    const empty = $('tableEmpty');
+    if (state.data.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      tbody.innerHTML = state.data.map((d, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${d.L.toFixed(2)}</td>
+          <td>${d.N}</td>
+          <td>${d.t.toFixed(2)}</td>
+          <td>${d.T.toFixed(3)}</td>
+          <td>${d.T2.toFixed(3)}</td>
+          <td><button class="del-btn" data-idx="${i}" title="Delete"><i class="fas fa-times"></i></button></td>
+        </tr>
+      `).join('');
+    }
+    $('pointsCount').textContent = state.data.length;
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.del-btn');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx);
+    state.data.splice(idx, 1);
+    renderTable();
+    renderGraph();
+    updateSlopeInfo();
+    renderAIAnalysis();
+  });
+
+  // ==================== EXPERIMENT ====================
+  function startExperiment() {
+    if (state.isTiming) return;
+    state.isTiming = true;
+    state.startTime = performance.now();
+    const T = computeT();
+    state.totalTime = state.N * T;
+
+    $('startBtn').disabled = true;
+    $('startBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Timing…';
+    $('lengthSlider').disabled = true;
+    $('nSelect').disabled = true;
+    $('gSelect').disabled = true;
+    document.querySelectorAll('.quick-lengths button').forEach(b => b.disabled = true);
+
+    const sw = $('stopwatchOverlay');
+    sw.classList.remove('done');
+    sw.classList.add('running');
+
+    function frame() {
+      if (!state.isTiming) return;
+      const elapsed = (performance.now() - state.startTime) / 1000;
+      state.currentTime = elapsed;
+      const ampRad = state.amp * Math.PI / 180;
+      const theta = ampRad * Math.cos(2 * Math.PI * elapsed / T);
+      drawPendulum(theta);
+      $('swTime').textContent = elapsed.toFixed(2);
+      const completed = Math.min(state.N, Math.floor(elapsed / T));
+      $('swProgress').textContent = `Oscillation ${completed} / ${state.N}`;
+      if (elapsed >= state.totalTime) { finishExperiment(); return; }
+      state.animationId = requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  function finishExperiment() {
+    state.isTiming = false;
+    cancelAnimationFrame(state.animationId);
+    const ampRad = state.amp * Math.PI / 180;
+    drawPendulum(ampRad);
+    $('swTime').textContent = state.totalTime.toFixed(2);
+    $('swProgress').textContent = `Complete · ${state.N} / ${state.N}`;
+
+    const sw = $('stopwatchOverlay');
+    sw.classList.remove('running');
+    sw.classList.add('done');
+
+    const noise = (Math.random() - 0.5) * 0.2;
+    const measuredTime = state.totalTime + noise;
+    const T_measured = measuredTime / state.N;
+
+    state.data.push({
+      L: state.L, N: state.N, t: measuredTime,
+      T: T_measured, T2: T_measured * T_measured, g: state.g,
+    });
+
+    renderTable();
+    renderGraph();
+    updateSlopeInfo();
+    renderAIAnalysis();
+
+    $('startBtn').disabled = false;
+    $('startBtn').innerHTML = '<i class="fas fa-play"></i> Release &amp; Time';
+    $('lengthSlider').disabled = false;
+    $('nSelect').disabled = false;
+    $('gSelect').disabled = false;
+    document.querySelectorAll('.quick-lengths button').forEach(b => b.disabled = false);
+
+    setTimeout(() => {
+      if (!state.isTiming) {
+        $('swTime').textContent = '00.00';
+        $('swProgress').textContent = `Ready · ${state.N} oscillations`;
+        sw.classList.remove('done');
+      }
+    }, 2200);
+  }
+
+  // ==================== UI ====================
+  function updateEstTime() {
+    const T = computeT();
+    const dur = state.N * T;
+    const mins = Math.floor(dur / 60);
+    const secs = dur % 60;
+    $('estTime').textContent = mins > 0 ? `${mins}m ${secs.toFixed(1)}s` : `${dur.toFixed(1)} s`;
+  }
+
+  function updatePrediction() {
+    const T = computeT();
+    $('predT').textContent = 'T ≈ ' + T.toFixed(3) + ' s';
+    $('predT2').textContent = 'T² ≈ ' + (T * T).toFixed(3) + ' s²';
+    $('theoryGLabel').textContent = state.g.toFixed(2);
+  }
+
+  function updateQuickButtons() {
+    document.querySelectorAll('.quick-lengths button').forEach(b => {
+      b.classList.toggle('active', Math.abs(parseFloat(b.dataset.l) - state.L) < 0.005);
+    });
+  }
+
+  function updateStaticDisplay() {
+    $('lengthVal').textContent = state.L.toFixed(2) + ' m';
+    $('nVal').textContent = state.N;
+    $('gVal').textContent = state.g.toFixed(2) + ' m/s²';
+    updateEstTime();
+    updatePrediction();
+    updateQuickButtons();
+  }
+
+  // ==================== EVENTS ====================
+  $('lengthSlider').addEventListener('input', (e) => {
+    state.L = parseFloat(e.target.value);
+    updateStaticDisplay();
+    if (!state.isTiming) drawPendulum(state.amp * Math.PI / 180);
+    renderGraph();
+  });
+
+  $('nSelect').addEventListener('change', (e) => {
+    state.N = parseInt(e.target.value);
+    updateStaticDisplay();
+    if (!state.isTiming) $('swProgress').textContent = `Ready · ${state.N} oscillations`;
+  });
+
+  $('gSelect').addEventListener('change', (e) => {
+    state.g = parseFloat(e.target.value);
+    updateStaticDisplay();
+    if (!state.isTiming) drawPendulum(state.amp * Math.PI / 180);
+    renderGraph();
+    updateSlopeInfo();
+    renderAIAnalysis();
+  });
+
+  document.querySelectorAll('.quick-lengths button').forEach(b => {
+    b.addEventListener('click', () => {
+      if (state.isTiming) return;
+      state.L = parseFloat(b.dataset.l);
+      $('lengthSlider').value = state.L;
+      updateStaticDisplay();
+      drawPendulum(state.amp * Math.PI / 180);
+      renderGraph();
+    });
+  });
+
+  $('startBtn').addEventListener('click', () => { if (!state.isTiming) startExperiment(); });
+
+  $('clearDataBtn').addEventListener('click', () => {
+    if (state.data.length === 0) return;
+    if (!confirm('Clear all recorded data? This cannot be undone.')) return;
+    state.data = [];
+    renderTable();
+    renderGraph();
+    updateSlopeInfo();
+    renderAIAnalysis();
+    $('swProgress').textContent = `Ready · ${state.N} oscillations`;
+  });
+
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      this.beginPath();
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      this.closePath();
+      return this;
+    };
+  }
+
+  function waitForKatex() {
+    if (typeof katex !== 'undefined') { renderAIAnalysis(); return; }
+    setTimeout(waitForKatex, 100);
+  }
+
+  // ==================== INIT ====================
+  updateStaticDisplay();
+  renderTable();
+  renderGraph();
+  updateSlopeInfo();
+  drawPendulum(state.amp * Math.PI / 180);
+  renderAIAnalysis();
+  waitForKatex();
+  $('swProgress').textContent = `Ready · ${state.N} oscillations`;
+
+  console.log('🔬 Simple Pendulum Practical with lab precautions & real-time slope loaded');
+})();
+</script>
+</body>
+</html>
